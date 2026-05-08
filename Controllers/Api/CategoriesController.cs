@@ -1,11 +1,14 @@
 using FluentValidation;
+using Library_Management_System.Common.Exceptions;
 using Library_Management_System.DTOs.Categories;
 using Library_Management_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_Management_System.Controllers.Api
 {
     [ApiController]
+    [Authorize(Policy = "AdminOrLibrarian")]
     [Route("api/[controller]")]
     public class CategoriesController(
         ICategoryService categories,
@@ -24,14 +27,18 @@ namespace Library_Management_System.Controllers.Api
         public async Task<IActionResult> GetByIdForView(int id)
         {
             var category = await categories.GetByIdAsync(id);
-            return category is null ? NotFound() : Ok(category);
+            return category is null
+                ? throw new NotFoundException("Category does not exist!")
+                : Ok(category);
         }
 
         [HttpGet("{id:int}/update")]
         public async Task<IActionResult> GetByIdForUpdate(int id)
         {
             var category = await categories.GetByIdForUpdateAsync(id);
-            return category is null ? NotFound() : Ok(category);
+            return category is null
+                ? throw new NotFoundException("Category does not exist!")
+                : Ok(category);
         }
 
         [HttpGet("dropdown")]
@@ -56,13 +63,23 @@ namespace Library_Management_System.Controllers.Api
         public async Task<IActionResult> Update(int id, CategoryUpdateDto dto)
         {
             await updateValidator.ValidateAndThrowAsync(dto);
-            return await categories.UpdateAsync(id, dto) ? NoContent() : NotFound();
+            if (!await categories.UpdateAsync(id, dto))
+            {
+                throw new NotFoundException("Category does not exist!");
+            }
+
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            return await categories.DeleteAsync(id) ? NoContent() : NotFound();
+            if (!await categories.DeleteAsync(id))
+            {
+                throw new NotFoundException("Category does not exist!");
+            }
+
+            return NoContent();
         }
 
         #endregion

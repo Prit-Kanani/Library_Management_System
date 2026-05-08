@@ -1,14 +1,136 @@
-now create tow folders in controllers folder, 1 for 'Api' & 2nd for 'Web' and move the controllers to their respective folders. do not create view for now.
-create DTOs folder for DTO of theirs respective Tables and Controllers.
-a Table api of
-	1st Get All with pagination & their appropriate filters according to attributes of the table.
-	2nd Get by Id for View
-	3rd Get by Id for Update.
-	4th Post for Create
-	5th Put for Update
-	6th Delete for Delete (soft delete for now if bit attribute is present other wise hard delete)
-	7th Dropdown if needed for foreign key attributes.
-the structure should be Controller , Service, Repository architecture with the use of interfaces for service and repository layers.
-Use region to partition the code for more readability and maintainability.
-Create FluentValidation for DTOs according to the classed in Services layer and use it in the controllers for validation of incoming requests using 
-dependency ingection like thing and use validate and throw in create and update apis.
+now implement global header token adding in scaler so we can add token and it can be applied to anywhere.
+then create the global exception according to the following code.
+using Microsoft.AspNetCore.Http;
+
+namespace Comman.Exceptions;
+
+public abstract class ApiException(
+    string message,
+    int statusCode
+) : Exception(message)
+{
+    public int StatusCode { get; } = statusCode;
+}
+
+public sealed class BadRequestException(string message) : ApiException(message, StatusCodes.Status400BadRequest)
+{
+}
+
+public sealed class NotFoundException(string message) : ApiException(message, StatusCodes.Status404NotFound)
+{
+}
+
+public sealed class UnauthorizedException(string message) : ApiException(message, StatusCodes.Status401Unauthorized)
+{
+}
+
+public sealed class ApiServerException(string message) : ApiException(message, StatusCodes.Status500InternalServerError)
+{
+}
+
+public abstract class DatabaseException(
+    string message,
+    int? sqlErrorNumber = null,
+    int statusCode = StatusCodes.Status500InternalServerError
+) : ApiException(message, statusCode)
+{
+    public int? SqlErrorNumber { get; } = sqlErrorNumber;
+}
+
+public sealed class DuplicateKeyException(string message, int? sqlErrorNumber = null)
+    : DatabaseException(message, sqlErrorNumber, StatusCodes.Status409Conflict)
+{
+}
+
+public sealed class ForeignKeyViolationException(string message, int? sqlErrorNumber = null)
+    : DatabaseException(message, sqlErrorNumber, StatusCodes.Status400BadRequest)
+{
+}
+
+public sealed class DatabaseTimeoutException(string message, int? sqlErrorNumber = null)
+    : DatabaseException(message, sqlErrorNumber, StatusCodes.Status503ServiceUnavailable)
+{
+}
+
+public sealed class DatabaseServerException(string message)
+    : ApiException(message, StatusCodes.Status500InternalServerError)
+{
+}
+
+------------------------------------
+using Comman.Exceptions;
+using FluentValidation;
+using Newtonsoft.Json;
+using System.Net;
+
+namespace UserService.Exceptions;
+
+public class ExceptionMiddleware(RequestDelegate next)
+{
+    private readonly RequestDelegate _next = next;
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            await _next(context);
+        }
+        catch (Exception ex)
+        {
+            await HandleExceptionAsync(context, ex);
+        }
+    }
+
+    private static async Task HandleExceptionAsync(HttpContext context, Exception ex)
+    {
+        context.Response.ContentType = "application/json";
+
+        if (ex is ValidationException validationException)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+            var validationResponse = new
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = "Validation failed",
+                Errors = validationException.Errors
+                    .GroupBy(error => error.PropertyName)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.Select(error => error.ErrorMessage).ToArray()),
+                Status = "ERROR"
+            };
+
+            var validationJson = JsonConvert.SerializeObject(validationResponse);
+            await context.Response.WriteAsync(validationJson);
+            return;
+        }
+
+        var statusCode = (int)HttpStatusCode.InternalServerError;
+        var message = "The API is not working";
+
+        if (ex is ApiException apiEx)
+        {
+            statusCode = apiEx.StatusCode;
+            message = apiEx.Message;
+        }
+
+        context.Response.StatusCode = statusCode;
+
+        var errorResponse = new
+        {
+            StatusCode = statusCode,
+            Message = message,
+            Status = "ERROR"
+        };
+
+        var json = JsonConvert.SerializeObject(errorResponse);
+        await context.Response.WriteAsync(json);
+    }
+}
+--------------------------------------------------------------
+
+ var user = await context.User.FirstOrDefaultAsync(d => d.UserID == userID)
+            ?? throw new NotFoundException("User does not exist!");
+--------------------------------------------------------------
+app.UseMiddleware<ExceptionMiddleware>();

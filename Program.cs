@@ -4,10 +4,15 @@ using Library_Management_System.Repositories;
 using Library_Management_System.Repositories.Interfaces;
 using Library_Management_System.Services;
 using Library_Management_System.Services.Interfaces;
+using Library_Management_System.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +26,76 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IIssuedBookService, IssuedBookService>();
 builder.Services.AddScoped<IPurchaseBookService, PurchaseBookService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]
+                    ?? throw new InvalidOperationException("Jwt:Key is missing from configuration.")))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token)
+                    && context.Request.Cookies.TryGetValue("LibraryJwt", out var token))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
+            },
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+
+                if (IsApiRequest(context.Request))
+                {
+                    await WriteAuthErrorAsync(
+                        context.Response,
+                        StatusCodes.Status401Unauthorized,
+                        "You must be logged in to access this resource.");
+                    return;
+                }
+
+                var returnUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
+                context.Response.Redirect($"/Auth/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+            },
+            OnForbidden = async context =>
+            {
+                if (IsApiRequest(context.Request))
+                {
+                    await WriteAuthErrorAsync(
+                        context.Response,
+                        StatusCodes.Status403Forbidden,
+                        "You do not have permission to access this resource.");
+                    return;
+                }
+
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsync("You do not have permission to access this page.");
+            }
+        };
+    });
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"))
+    .AddPolicy("AdminOrLibrarian", policy =>
+        policy.RequireRole("Admin", "Librarian"))
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build());
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -31,9 +105,26 @@ builder.Services.AddSwaggerGen(options =>
         Title = "Library Management System API",
         Version = "v1"
     });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Description = "Enter only the JWT token. Scalar will send it as: Bearer {token}"
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -43,8 +134,10 @@ if (app.Environment.IsDevelopment())
     {
         options.WithTitle("Library Management System API")
                .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+               .AddPreferredSecuritySchemes(["Bearer"])
                .WithOpenApiRoutePattern("/swagger/{documentName}/swagger.json");
-    });
+    })
+    .AllowAnonymous();
 
     if (ShouldOpenBrowserTabs(builder))
     {
@@ -60,6 +153,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
@@ -158,4 +253,25 @@ static async Task OpenStartupBrowserTabsAsync(WebApplication app)
             Console.WriteLine($"Failed to open {url}: {ex.Message}");
         }
     }
+}
+
+static bool IsApiRequest(HttpRequest request)
+{
+    return request.Path.StartsWithSegments("/api")
+        || request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
+}
+
+static async Task WriteAuthErrorAsync(HttpResponse response, int statusCode, string message)
+{
+    response.StatusCode = statusCode;
+    response.ContentType = "application/json";
+
+    var errorResponse = new
+    {
+        StatusCode = statusCode,
+        Message = message,
+        Status = "ERROR"
+    };
+
+    await response.WriteAsync(JsonSerializer.Serialize(errorResponse));
 }

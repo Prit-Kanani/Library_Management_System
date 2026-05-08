@@ -1,11 +1,14 @@
 using FluentValidation;
+using Library_Management_System.Common.Exceptions;
 using Library_Management_System.DTOs.Users;
 using Library_Management_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_Management_System.Controllers.Api
 {
     [ApiController]
+    [Authorize(Policy = "AdminOrLibrarian")]
     [Route("api/[controller]")]
     public class UsersController(
         IUserService users,
@@ -15,6 +18,7 @@ namespace Library_Management_System.Controllers.Api
         #region Query
 
         [HttpGet]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> GetAll([FromQuery] UserFilterDto filter)
         {
             return Ok(await users.GetAllAsync(filter));
@@ -24,14 +28,18 @@ namespace Library_Management_System.Controllers.Api
         public async Task<IActionResult> GetByIdForView(int id)
         {
             var user = await users.GetByIdAsync(id);
-            return user is null ? NotFound() : Ok(user);
+            return user is null
+                ? throw new NotFoundException("User does not exist!")
+                : Ok(user);
         }
 
         [HttpGet("{id:int}/update")]
         public async Task<IActionResult> GetByIdForUpdate(int id)
         {
             var user = await users.GetByIdForUpdateAsync(id);
-            return user is null ? NotFound() : Ok(user);
+            return user is null
+                ? throw new NotFoundException("User does not exist!")
+                : Ok(user);
         }
 
         [HttpGet("dropdown")]
@@ -56,13 +64,24 @@ namespace Library_Management_System.Controllers.Api
         public async Task<IActionResult> Update(int id, UserUpdateDto dto)
         {
             await updateValidator.ValidateAndThrowAsync(dto);
-            return await users.UpdateAsync(id, dto) ? NoContent() : NotFound();
+            if (!await users.UpdateAsync(id, dto))
+            {
+                throw new NotFoundException("User does not exist!");
+            }
+
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Delete(int id)
         {
-            return await users.DeleteAsync(id) ? NoContent() : NotFound();
+            if (!await users.DeleteAsync(id))
+            {
+                throw new NotFoundException("User does not exist!");
+            }
+
+            return NoContent();
         }
 
         #endregion
