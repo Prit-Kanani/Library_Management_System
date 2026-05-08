@@ -1,0 +1,48 @@
+Models:
+
+1 Users :
+		UserID INT	PRIMARY KEY IDENTITY(1,1),
+		FullName NVARCHAR(100),
+		Email NVARCHAR(100),
+		Password NVARCHAR(100),
+		Role NVARCHAR(10) In(Admin/Librarian/User)
+		IsActive BIT,
+		IsDeleted BIT
+
+2 Categories:
+		CategoryId INT PRIMARY KEY IDENTITY(1,1),
+		CategoryName NVARCHAR(100)
+
+3 Books:
+		BookId INT PRIMARY KEY IDENTITY(1,1),
+		Title NVARCHAR(200),
+		Discription NVARCHAR(500),
+		Author NVARCHAR(100),
+		Price DECIMAL(10, 2),
+		CategoryId INT,
+		TotalQuantity INT,
+		AvailableQuantity INT,
+		IsActive BIT,
+		IsRemoved BIT,
+		FOREIGN KEY (CategoryId) REFERENCES
+
+4 IssuedBooks:
+		IssueId INT PRIMARY KEY IDENTITY(1,1),
+		BookId INT,
+		UserId INT,
+		IssuePerpose NVARCHAR(200) Nullable,
+		IssueDate DATETIME,
+		ReturnDate DATETIME,
+		CurrentPenaltyAmount DECIMAL(10, 2) default 0, if deadline hit then the amount of book,
+		Status NVARCHAR(20) In(Issued/Returned/Penaltized<-(make it some thing like that for 3rd one or change it to appropriate one.))
+
+5 PerchaseBooks:
+		PurchaseId INT PRIMARY KEY IDENTITY(1,1),
+		BookId INT,
+		PurchaseAmmountPerUnit DECIMAL(10, 2),
+		PurchaseQuantity INT,
+		PurchaseDate DATETIME,
+		PurchaseFrom NVARCHAR(100),
+		PaymentMethod NVARCHAR(20) In(Cash/Card/Online)
+		PaymentStatus NVARCHAR(20) In(Paid/Unpaid)
+		FOREIGN KEY (BookId) REFERENCES Books(BookId),
