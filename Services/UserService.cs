@@ -3,12 +3,15 @@ using Library_Management_System.DTOs.Users;
 using Library_Management_System.Models;
 using Library_Management_System.Repositories.Interfaces;
 using Library_Management_System.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Library_Management_System.Services
 {
     public class UserService(IRepository<User> users) : IUserService
     {
+        private readonly PasswordHasher<User> _passwordHasher = new();
+
         #region Query
 
         public async Task<PagedResultDto<UserViewDto>> GetAllAsync(UserFilterDto filter)
@@ -61,7 +64,7 @@ namespace Library_Management_System.Services
                 {
                     FullName = user.FullName,
                     Email = user.Email,
-                    Password = user.Password,
+                    Password = string.Empty,
                     Role = user.Role,
                     IsActive = user.IsActive
                 })
@@ -92,10 +95,11 @@ namespace Library_Management_System.Services
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
-                Password = dto.Password,
                 Role = dto.Role,
                 IsActive = dto.IsActive
             };
+
+            user.Password = _passwordHasher.HashPassword(user, dto.Password);
 
             await users.AddAsync(user);
             await users.SaveChangesAsync();
@@ -114,7 +118,7 @@ namespace Library_Management_System.Services
 
             user.FullName = dto.FullName;
             user.Email = dto.Email;
-            user.Password = dto.Password;
+            user.Password = _passwordHasher.HashPassword(user, dto.Password);
             user.Role = dto.Role;
             user.IsActive = dto.IsActive;
 

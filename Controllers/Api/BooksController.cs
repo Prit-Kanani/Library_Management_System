@@ -1,4 +1,5 @@
 using FluentValidation;
+using Library_Management_System.Common.Exceptions;
 using Library_Management_System.DTOs.Books;
 using Library_Management_System.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -24,14 +25,18 @@ namespace Library_Management_System.Controllers.Api
         public async Task<IActionResult> GetByIdForView(int id)
         {
             var book = await books.GetByIdAsync(id);
-            return book is null ? NotFound() : Ok(book);
+            return book is null
+                ? throw new NotFoundException("Book does not exist!")
+                : Ok(book);
         }
 
         [HttpGet("{id:int}/update")]
         public async Task<IActionResult> GetByIdForUpdate(int id)
         {
             var book = await books.GetByIdForUpdateAsync(id);
-            return book is null ? NotFound() : Ok(book);
+            return book is null
+                ? throw new NotFoundException("Book does not exist!")
+                : Ok(book);
         }
 
         [HttpGet("dropdown")]
@@ -56,13 +61,23 @@ namespace Library_Management_System.Controllers.Api
         public async Task<IActionResult> Update(int id, BookUpdateDto dto)
         {
             await updateValidator.ValidateAndThrowAsync(dto);
-            return await books.UpdateAsync(id, dto) ? NoContent() : NotFound();
+            if (!await books.UpdateAsync(id, dto))
+            {
+                throw new NotFoundException("Book does not exist!");
+            }
+
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            return await books.DeleteAsync(id) ? NoContent() : NotFound();
+            if (!await books.DeleteAsync(id))
+            {
+                throw new NotFoundException("Book does not exist!");
+            }
+
+            return NoContent();
         }
 
         #endregion

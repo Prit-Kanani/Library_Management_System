@@ -1,5 +1,7 @@
+using Library_Management_System.Common.Exceptions;
 using Library_Management_System.Data;
 using Library_Management_System.Repositories.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -48,7 +50,29 @@ namespace Library_Management_System.Repositories
 
         public async Task<int> SaveChangesAsync()
         {
-            return await context.SaveChangesAsync();
+            try
+            {
+                return await context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlException)
+            {
+                throw MapSqlException(sqlException);
+            }
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private static Exception MapSqlException(SqlException sqlException)
+        {
+            return sqlException.Number switch
+            {
+                2601 or 2627 => new DuplicateKeyException("A record with the same unique value already exists.", sqlException.Number),
+                547 => new ForeignKeyViolationException("The record cannot be saved because related data is missing or in use.", sqlException.Number),
+                -2 => new DatabaseTimeoutException("The database request timed out.", sqlException.Number),
+                _ => new DatabaseServerException("A database error occurred.")
+            };
         }
 
         #endregion

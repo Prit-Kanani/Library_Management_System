@@ -1,0 +1,36 @@
+@model Library_Management_System.DTOs.Auth.AuthResponseDto
+
+@{
+    ViewData["Title"] = "Authenticated";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/style.css">
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-panel auth-panel-wide">
+            <h1>Authenticated</h1>
+
+            <div class="auth-result">
+                <p><strong>User:</strong> @Model.FullName</p>
+                <p><strong>Email:</strong> @Model.Email</p>
+                <p><strong>Role:</strong> @Model.Role</p>
+                <p><strong>Expires:</strong> @Model.ExpiresAt.ToLocalTime()</p>
+            </div>
+
+            <label for="token">JWT Token</label>
+            <textarea id="token" class="token-output" readonly>@Model.Token</textarea>
+
+            <p class="auth-link">
+                <a asp-controller="Home" asp-action="Index">Back to home</a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>
