@@ -1,48 +1,14 @@
-Models:
-
-1 Users :
-		UserID INT	PRIMARY KEY IDENTITY(1,1),
-		FullName NVARCHAR(100),
-		Email NVARCHAR(100),
-		Password NVARCHAR(100),
-		Role NVARCHAR(10) In(Admin/Librarian/User)
-		IsActive BIT,
-		IsDeleted BIT
-
-2 Categories:
-		CategoryId INT PRIMARY KEY IDENTITY(1,1),
-		CategoryName NVARCHAR(100)
-
-3 Books:
-		BookId INT PRIMARY KEY IDENTITY(1,1),
-		Title NVARCHAR(200),
-		Discription NVARCHAR(500),
-		Author NVARCHAR(100),
-		Price DECIMAL(10, 2),
-		CategoryId INT,
-		TotalQuantity INT,
-		AvailableQuantity INT,
-		IsActive BIT,
-		IsRemoved BIT,
-		FOREIGN KEY (CategoryId) REFERENCES
-
-4 IssuedBooks:
-		IssueId INT PRIMARY KEY IDENTITY(1,1),
-		BookId INT,
-		UserId INT,
-		IssuePerpose NVARCHAR(200) Nullable,
-		IssueDate DATETIME,
-		ReturnDate DATETIME,
-		CurrentPenaltyAmount DECIMAL(10, 2) default 0, if deadline hit then the amount of book,
-		Status NVARCHAR(20) In(Issued/Returned/Penaltized<-(make it some thing like that for 3rd one or change it to appropriate one.))
-
-5 PerchaseBooks:
-		PurchaseId INT PRIMARY KEY IDENTITY(1,1),
-		BookId INT,
-		PurchaseAmmountPerUnit DECIMAL(10, 2),
-		PurchaseQuantity INT,
-		PurchaseDate DATETIME,
-		PurchaseFrom NVARCHAR(100),
-		PaymentMethod NVARCHAR(20) In(Cash/Card/Online)
-		PaymentStatus NVARCHAR(20) In(Paid/Unpaid)
-		FOREIGN KEY (BookId) REFERENCES Books(BookId),
+now create tow folders in controllers folder, 1 for 'Api' & 2nd for 'Web' and move the controllers to their respective folders. do not create view for now.
+create DTOs folder for DTO of theirs respective Tables and Controllers.
+a Table api of
+	1st Get All with pagination & their appropriate filters according to attributes of the table.
+	2nd Get by Id for View
+	3rd Get by Id for Update.
+	4th Post for Create
+	5th Put for Update
+	6th Delete for Delete (soft delete for now if bit attribute is present other wise hard delete)
+	7th Dropdown if needed for foreign key attributes.
+the structure should be Controller , Service, Repository architecture with the use of interfaces for service and repository layers.
+Use region to partition the code for more readability and maintainability.
+Create FluentValidation for DTOs according to the classed in Services layer and use it in the controllers for validation of incoming requests using 
+dependency ingection like thing and use validate and throw in create and update apis.

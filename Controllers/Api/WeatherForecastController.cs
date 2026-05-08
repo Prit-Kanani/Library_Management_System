@@ -1,15 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Library_Management_System.Controllers
+namespace Library_Management_System.Controllers.Api
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries =
         [
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         ];
+
+        #region Endpoints
 
         [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
@@ -22,5 +24,7 @@ namespace Library_Management_System.Controllers
             })
             .ToArray();
         }
+
+        #endregion
     }
 }
