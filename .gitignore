@@ -361,3 +361,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local AI/code-agent context and scratch files
+AGENT.md
+.codex/
+.agents/
+.ai/
+agent-temp/
+agent-tmp/
+codex-temp/
+codex-tmp/
+*.agent.tmp
+*.codex.tmp
