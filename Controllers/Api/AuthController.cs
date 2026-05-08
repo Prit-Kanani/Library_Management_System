@@ -2,11 +2,13 @@ using FluentValidation;
 using Library_Management_System.Common.Exceptions;
 using Library_Management_System.DTOs.Auth;
 using Library_Management_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_Management_System.Controllers.Api
 {
     [ApiController]
+    [AllowAnonymous]
     [Route("api/[controller]")]
     public class AuthController(
         IAuthService authService,

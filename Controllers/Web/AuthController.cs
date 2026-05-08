@@ -1,10 +1,12 @@
 using FluentValidation;
 using Library_Management_System.DTOs.Auth;
 using Library_Management_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_Management_System.Controllers.Web
 {
+    [AllowAnonymous]
     public class AuthController(
         IAuthService authService,
         IValidator<LoginDto> loginValidator,

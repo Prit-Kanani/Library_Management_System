@@ -2,11 +2,13 @@ using FluentValidation;
 using Library_Management_System.Common.Exceptions;
 using Library_Management_System.DTOs.Books;
 using Library_Management_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_Management_System.Controllers.Api
 {
     [ApiController]
+    [Authorize(Policy = "AdminOrLibrarian")]
     [Route("api/[controller]")]
     public class BooksController(
         IBookService books,

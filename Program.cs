@@ -6,6 +6,7 @@ using Library_Management_System.Services;
 using Library_Management_System.Services.Interfaces;
 using Library_Management_System.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -42,7 +43,59 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]
                     ?? throw new InvalidOperationException("Jwt:Key is missing from configuration.")))
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token)
+                    && context.Request.Cookies.TryGetValue("LibraryJwt", out var token))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
+            },
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+
+                if (IsApiRequest(context.Request))
+                {
+                    await WriteAuthErrorAsync(
+                        context.Response,
+                        StatusCodes.Status401Unauthorized,
+                        "You must be logged in to access this resource.");
+                    return;
+                }
+
+                var returnUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
+                context.Response.Redirect($"/Auth/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+            },
+            OnForbidden = async context =>
+            {
+                if (IsApiRequest(context.Request))
+                {
+                    await WriteAuthErrorAsync(
+                        context.Response,
+                        StatusCodes.Status403Forbidden,
+                        "You do not have permission to access this resource.");
+                    return;
+                }
+
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsync("You do not have permission to access this page.");
+            }
+        };
     });
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"))
+    .AddPolicy("AdminOrLibrarian", policy =>
+        policy.RequireRole("Admin", "Librarian"))
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build());
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -83,7 +136,8 @@ if (app.Environment.IsDevelopment())
                .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
                .AddPreferredSecuritySchemes(["Bearer"])
                .WithOpenApiRoutePattern("/swagger/{documentName}/swagger.json");
-    });
+    })
+    .AllowAnonymous();
 
     if (ShouldOpenBrowserTabs(builder))
     {
@@ -199,4 +253,25 @@ static async Task OpenStartupBrowserTabsAsync(WebApplication app)
             Console.WriteLine($"Failed to open {url}: {ex.Message}");
         }
     }
+}
+
+static bool IsApiRequest(HttpRequest request)
+{
+    return request.Path.StartsWithSegments("/api")
+        || request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
+}
+
+static async Task WriteAuthErrorAsync(HttpResponse response, int statusCode, string message)
+{
+    response.StatusCode = statusCode;
+    response.ContentType = "application/json";
+
+    var errorResponse = new
+    {
+        StatusCode = statusCode,
+        Message = message,
+        Status = "ERROR"
+    };
+
+    await response.WriteAsync(JsonSerializer.Serialize(errorResponse));
 }

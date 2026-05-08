@@ -2,11 +2,13 @@ using FluentValidation;
 using Library_Management_System.Common.Exceptions;
 using Library_Management_System.DTOs.Users;
 using Library_Management_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_Management_System.Controllers.Api
 {
     [ApiController]
+    [Authorize(Policy = "AdminOrLibrarian")]
     [Route("api/[controller]")]
     public class UsersController(
         IUserService users,
@@ -16,6 +18,7 @@ namespace Library_Management_System.Controllers.Api
         #region Query
 
         [HttpGet]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> GetAll([FromQuery] UserFilterDto filter)
         {
             return Ok(await users.GetAllAsync(filter));
@@ -70,6 +73,7 @@ namespace Library_Management_System.Controllers.Api
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Delete(int id)
         {
             if (!await users.DeleteAsync(id))
