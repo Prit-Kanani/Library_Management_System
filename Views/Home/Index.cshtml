@@ -1,0 +1,155 @@
+@{
+    ViewData["Title"] = "Library Management System";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>📚 Library Management</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#api">API</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Welcome to Library Management System</h1>
+            <p>Manage your library efficiently with our modern API</p>
+            <div class="cta-buttons">
+                <a href="/scalar/v1" class="btn btn-primary">📖 Explore API</a>
+                <a href="#features" class="btn btn-secondary">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2>Key Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3>Book Management</h3>
+                    <p>Easily add, update, and manage your library books</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3>Member Management</h3>
+                    <p>Track members and their borrowing history</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Borrowing System</h3>
+                    <p>Manage book borrowing and return processes</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Analytics</h3>
+                    <p>Get insights into library usage and statistics</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Search & Filter</h3>
+                    <p>Quick search functionality for books and members</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>REST API</h3>
+                    <p>Fully documented REST API for integrations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Documentation Section -->
+    <section id="api" class="api-section">
+        <div class="container">
+            <h2>API Endpoints</h2>
+            <div class="api-grid">
+                <div class="api-card">
+                    <div class="method get">GET</div>
+                    <h4>/api/books</h4>
+                    <p>Retrieve all books from the library</p>
+                </div>
+                <div class="api-card">
+                    <div class="method post">POST</div>
+                    <h4>/api/books</h4>
+                    <p>Add a new book to the library</p>
+                </div>
+                <div class="api-card">
+                    <div class="method get">GET</div>
+                    <h4>/api/members</h4>
+                    <p>Retrieve all library members</p>
+                </div>
+                <div class="api-card">
+                    <div class="method post">POST</div>
+                    <h4>/api/members</h4>
+                    <p>Register a new member</p>
+                </div>
+                <div class="api-card">
+                    <div class="method post">POST</div>
+                    <h4>/api/borrowing</h4>
+                    <p>Record a book borrowing transaction</p>
+                </div>
+                <div class="api-card">
+                    <div class="method put">PUT</div>
+                    <h4>/api/borrowing/return</h4>
+                    <p>Record a book return transaction</p>
+                </div>
+            </div>
+            <div class="api-cta">
+                <p>Want to explore all endpoints in detail?</p>
+                <a href="/scalar/v1" class="btn btn-primary">Open Scalar API UI →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2>Get in Touch</h2>
+            <p>Need help or have questions? Contact us!</p>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <span>📧</span>
+                    <p>support@library.com</p>
+                </div>
+                <div class="contact-item">
+                    <span>📱</span>
+                    <p>+1 (555) 123-4567</p>
+                </div>
+                <div class="contact-item">
+                    <span>🔗</span>
+                    <p><a href="https://github.com/Prit-Kanani/Library_Management_System" target="_blank">GitHub Repository</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Library Management System. All rights reserved.</p>
+            <p>Built with ❤️ using ASP.NET Core 10</p>
+        </div>
+    </footer>
+
+    <script src="~/js/script.js"></script>
+</body>
+</html>
