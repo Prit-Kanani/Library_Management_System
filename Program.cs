@@ -1,4 +1,9 @@
+using FluentValidation;
 using Library_Management_System.Data;
+using Library_Management_System.Repositories;
+using Library_Management_System.Repositories.Interfaces;
+using Library_Management_System.Services;
+using Library_Management_System.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -10,6 +15,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IIssuedBookService, IssuedBookService>();
+builder.Services.AddScoped<IPurchaseBookService, PurchaseBookService>();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
